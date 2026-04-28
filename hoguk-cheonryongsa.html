@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>호국천룡사</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;500;600;700;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <!-- =========================================================
+    ✏️ 편집 가이드
+    - [NULL] 또는 [... 입력하세요] 표시된 항목을 실제 내용으로 교체하세요.
+    - 배경 사진: PHOTO_MAIN 변수를 절 실제 사진 URL 또는 파일명으로 바꾸세요.
+    - 음력 기도일 양력 날짜는 공지사항 페이지에서 매달 업데이트하세요.
+  ========================================================= -->
+
+  <style>
+    :root {
+      --crimson:    #8B1A1A;
+      --crimson-dk: #5C1010;
+      --gold:       #C8961E;
+      --gold-lt:    #E8C547;
+      --ivory:      #F7F3E9;
+      --ivory-dk:   #EDE7D4;
+      --wood-dk:    #2C1810;
+      --wood-md:    #6B4226;
+      --wood-lt:    #C4A27A;
+      --ink:        #1C1410;
+      --paper:      #FAF6EE;
+
+      /* ✏️ EDIT: 사찰 실제 사진 URL로 교체 (파일을 같은 폴더에 넣어도 됩니다) */
+      --PHOTO_MAIN:    url('https://images.unsplash.com/photo-1684134788613-68bfbf848ffe?w=1920&q=85');
+      --PHOTO_ALT1:    url('https://images.unsplash.com/photo-1632397300040-96cb44a54f2e?w=1920&q=85');
+      --PHOTO_ALT2:    url('https://images.unsplash.com/photo-1684134549350-be5fd0d8feaa?w=1920&q=85');
+      --PHOTO_THUMB:   url('https://images.unsplash.com/photo-1609171150381-6f371e1fb47e?w=800&q=80');
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Noto Sans KR', sans-serif; color: var(--ink); overflow-x: hidden; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--wood-dk); }
+    ::-webkit-scrollbar-thumb { background: var(--gold); border-radius:3px; }
+
+    /* ═══════ BACKGROUND SYSTEM ═══════
+       구조:
+       1. #temple-photo  : 실제 사찰 사진 (전체 화면, 하단 고정)
+       2. #sky-layer     : 시간대별 하늘 그라데이션 (상단 60%에만 적용, 아래로 갈수록 투명)
+       3. #celestial     : 태양 / 달
+       4. #read-overlay  : 가독성을 위한 전체 어두운 레이어
+    ══════════════════════════════════ */
+    #bg-wrap {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+    }
+
+    /* 사찰 실제 사진 — 전체 화면 */
+    #temple-photo {
+      position: absolute;
+      inset: 0;
+      background-image: var(--PHOTO_MAIN);
+      background-size: cover;
+      background-position: center bottom;
+      background-repeat: no-repeat;
+    }
+
+    /* 하늘 그라데이션: 위→아래, 상단에서 불투명, 중간 이후 완전 투명
+       → 사찰 사진은 항상 하단에서 보임 */
+    #sky-layer {
+      position: absolute;
+      inset: 0;
+      /* JS가 매 30초 업데이트 */
+      background: linear-gradient(to bottom,
+        rgba(10,10,30,1)   0%,
+        rgba(10,10,30,0.9) 30%,
+        rgba(10,10,30,0.4) 55%,
+        rgba(10,10,30,0)   70%
+      );
+      transition: background 60s ease;
+    }
+
+    /* 태양 / 달 */
+    #celestial {
+      position: absolute;
+      width: 54px; height: 54px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 2;
+      transition: left 45s linear, top 45s linear,
+                  background 90s ease, box-shadow 90s ease, opacity 3s ease;
+    }
+
+    /* 별 */
+    .star {
+      position: absolute;
+      background: #fff;
+      border-radius: 50%;
+      animation: twinkle 3s infinite alternate;
+      z-index: 1;
+    }
+    @keyframes twinkle { 0%{opacity:.15} 100%{opacity:.9} }
+
+    /* 가독성 오버레이 */
+    #read-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.08) 0%,
+        rgba(0,0,0,0.05) 50%,
+        rgba(0,0,0,0.55) 100%
+      );
+      z-index: 3;
+    }
+
+    /* ═══════ HEADER ═══════ */
+    #main-header {
+      position: fixed;
+      top: 0; left: 0; width: 100%;
+      z-index: 200;
+      background: rgba(20,8,4,0.80);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(200,150,30,0.3);
+    }
+    .header-inner {
+      max-width: 1200px; margin: 0 auto; padding: 0 1.8rem;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 66px;
+    }
+    .site-title {
+      font-family: 'Noto Serif KR', serif; font-size: 1.3rem; font-weight: 700;
+      color: var(--gold); letter-spacing: 0.12em; cursor: pointer; line-height: 1.2;
+    }
+    .site-title small {
+      display: block; font-size: 0.6rem; color: var(--wood-lt); font-weight: 300;
+      letter-spacing: 0.28em; font-family: 'Noto Sans KR', sans-serif;
+    }
+    nav { display:flex; gap:0.2rem; align-items:center; }
+    .nav-btn {
+      background: none; border: none; color: rgba(255,255,255,0.85);
+      font-family: 'Noto Sans KR', sans-serif; font-size: 0.86rem;
+      padding: 0.4rem 0.85rem; cursor: pointer; border-radius: 4px;
+      transition: background 0.2s, color 0.2s; letter-spacing: 0.06em;
+    }
+    .nav-btn:hover  { background: rgba(200,150,30,0.2); color: var(--gold); }
+    .nav-btn.active { background: rgba(200,150,30,0.25); color: var(--gold-lt); }
+    #menu-toggle {
+      display: none; flex-direction: column; gap: 5px;
+      cursor: pointer; padding: 4px;
+    }
+    #menu-toggle span {
+      display: block; width: 24px; height: 2px;
+      background: var(--gold); border-radius: 2px;
+    }
+
+    /* ═══════ PAGES ═══════ */
+    .page { display: none; position: relative; z-index: 10; min-height: 100vh; }
+    .page.active { display: block; }
+
+    /* ═══════ HERO ═══════ */
+    #hero {
+      height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 2rem; padding-top: 66px;
+      position: relative;
+    }
+    .hero-emblem { width: 72px; height: 72px; margin-bottom: 1.5rem; opacity: 0.85; }
+    .hero-title {
+      font-family: 'Noto Serif KR', serif;
+      font-size: clamp(2.6rem, 7vw, 4.8rem); font-weight: 900;
+      color: #fff; letter-spacing: 0.2em;
+      text-shadow: 0 2px 30px rgba(0,0,0,0.8), 0 0 60px rgba(200,150,30,0.25);
+    }
+    .hero-hanja {
+      font-family: 'Noto Serif KR', serif; font-size: 0.95rem;
+      color: var(--gold); letter-spacing: 0.35em; margin-top: 0.4rem; margin-bottom: 1.8rem;
+    }
+    .hero-tagline {
+      font-size: 1rem; color: rgba(255,255,255,0.82);
+      letter-spacing: 0.08em; max-width: 480px; line-height: 2;
+      margin-bottom: 2.2rem;
+    }
+    .hero-btn {
+      background: var(--crimson); border: 1px solid rgba(200,150,30,0.5);
+      color: var(--gold-lt); font-family: 'Noto Serif KR', serif;
+      font-size: 0.9rem; padding: 0.75rem 2rem; border-radius: 3px;
+      cursor: pointer; letter-spacing: 0.15em; transition: all 0.3s; margin: 0.3rem;
+    }
+    .hero-btn:hover { background: var(--crimson-dk); box-shadow: 0 0 18px rgba(200,150,30,0.35); }
+    .hero-btn.outline { background: rgba(0,0,0,0.3); }
+    #hero-clock { position: absolute; bottom: 2.5rem; right: 2rem; text-align: right; }
+    #clock-time {
+      font-family: 'Noto Serif KR', serif; font-size: 1.7rem;
+      color: rgba(255,255,255,0.9); font-weight: 300;
+    }
+    #clock-date { font-size: 0.78rem; color: var(--gold); letter-spacing: 0.1em; margin-top: 2px; }
+    .scroll-hint {
+      position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: 0.55;
+    }
+    .scroll-hint span { font-size: 0.66rem; color: #fff; letter-spacing: 0.18em; }
+    .scroll-arrow {
+      width: 18px; height: 18px;
+      border-right: 1.5px solid #fff; border-bottom: 1.5px solid #fff;
+      transform: rotate(45deg); animation: bounce 1.8s infinite;
+    }
+    @keyframes bounce {
+      0%,100% { transform: rotate(45deg) translateY(0); }
+      50%      { transform: rotate(45deg) translateY(6px); }
+    }
+
+    /* ═══════ QUICK STRIP ═══════ */
+    .quick-strip {
+      background: rgba(22,10,5,0.93); border-top: 1px solid rgba(200,150,30,0.2);
+      border-bottom: 1px solid rgba(200,150,30,0.2); padding: 1.4rem 2rem;
+    }
+    .quick-strip-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; text-align: center;
+    }
+    .qs-label { font-size: 0.7rem; color: var(--gold); letter-spacing: 0.22em; margin-bottom: 0.35rem; }
+    .qs-value { font-family: 'Noto Serif KR', serif; font-size: 0.95rem; color: var(--ivory); font-weight: 500; }
+
+    /* ═══════ CONTENT ═══════ */
+    .content-area { background: var(--paper); min-height: 60vh; }
+    .section-wrap { max-width: 960px; margin: 0 auto; padding: 4.5rem 2rem 3.5rem; }
+    .section-label {
+      font-size: 0.7rem; color: var(--crimson); letter-spacing: 0.3em; text-transform: uppercase;
+      margin-bottom: 0.7rem;
+    }
+    .section-title {
+      font-family: 'Noto Serif KR', serif; font-size: clamp(1.7rem, 4vw, 2.5rem);
+      font-weight: 700; color: var(--wood-dk); letter-spacing: 0.08em; line-height: 1.3;
+    }
+    .divider-gold {
+      width: 56px; height: 2px;
+      background: linear-gradient(to right, var(--gold), var(--gold-lt));
+      margin: 1.4rem 0 2.2rem;
+    }
+    .card-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.4rem;
+      margin-top: 1.8rem;
+    }
+    .card {
+      background: #fff; border: 1px solid rgba(200,150,30,0.18); border-radius: 6px;
+      padding: 1.6rem; transition: box-shadow 0.3s; cursor: default;
+    }
+    .card:hover { box-shadow: 0 5px 22px rgba(44,24,16,0.09); }
+    .card-icon { font-size: 1.9rem; margin-bottom: 0.9rem; }
+    .card-title { font-family: 'Noto Serif KR', serif; font-size: 1.05rem; font-weight: 600; color: var(--wood-dk); margin-bottom: 0.5rem; }
+    .card-body { font-size: 0.88rem; color: #555; line-height: 1.85; }
+    .null-text { color: #b0a090; font-style: italic; background: rgba(200,150,30,0.05); padding: 0.1rem 0.35rem; border-radius: 2px; }
+
+    /* ═══════ TABLE ═══════ */
+    .info-table { width: 100%; border-collapse: collapse; margin-top: 1.4rem; font-size: 0.9rem; }
+    .info-table th { background: var(--wood-dk); color: var(--gold); font-family: 'Noto Serif KR', serif; font-weight: 500; padding: 0.85rem 1.1rem; text-align: left; letter-spacing: 0.06em; }
+    .info-table td { padding: 0.8rem 1.1rem; border-bottom: 1px solid rgba(200,150,30,0.1); color: #333; }
+    .info-table tr:nth-child(even) td { background: rgba(200,150,30,0.04); }
+    .info-table tr:hover td { background: rgba(200,150,30,0.07); }
+
+    /* ═══════ NOTICE ═══════ */
+    .notice-list { margin-top: 1.4rem; }
+    .notice-item {
+      border-bottom: 1px solid rgba(200,150,30,0.13); padding: 1.1rem 0;
+      display: grid; grid-template-columns: 80px 1fr auto; gap: 1rem; align-items: start;
+    }
+    .notice-badge {
+      font-size: 0.7rem; padding: 0.28rem 0.55rem; border-radius: 100px;
+      text-align: center; font-weight: 600; letter-spacing: 0.04em; white-space: nowrap;
+    }
+    .badge-gwaneum { background: #E8F0FE; color: #1967D2; }
+    .badge-jijang  { background: #FCE8E6; color: #C5221F; }
+    .badge-choraru { background: #E6F4EA; color: #137333; }
+    .badge-notice  { background: #FFF3E0; color: #C77700; }
+    .notice-title { font-weight: 500; color: var(--wood-dk); font-size: 0.93rem; line-height: 1.6; }
+    .notice-subtitle { font-size: 0.8rem; color: #777; margin-top: 0.2rem; }
+    .notice-date { font-size: 0.78rem; color: #999; white-space: nowrap; }
+
+    /* ═══════ PRAYER CARDS ═══════ */
+    .prayer-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 1.4rem; margin-top: 1.8rem;
+    }
+    .prayer-card { border-radius: 7px; overflow: hidden; box-shadow: 0 2px 14px rgba(44,24,16,0.07); }
+    .prayer-card-header { padding: 1.1rem 1.4rem; }
+    .prayer-card-header.gwaneum { background: #1967D2; }
+    .prayer-card-header.jijang  { background: var(--crimson-dk); }
+    .prayer-card-header.choraru { background: #137333; }
+    .prayer-card-header.yoil    { background: var(--wood-md); }
+    .prayer-card-title { font-family: 'Noto Serif KR', serif; font-size: 1.1rem; font-weight: 700; color: #fff; }
+    .prayer-card-subtitle { font-size: 0.78rem; color: rgba(255,255,255,0.72); margin-top: 0.2rem; }
+    .prayer-card-body { padding: 1.2rem 1.4rem; background: #fff; }
+    .prayer-row { display: flex; justify-content: space-between; padding: 0.4rem 0; font-size: 0.88rem; border-bottom: 1px solid rgba(0,0,0,0.05); }
+    .prayer-row:last-child { border-bottom: none; }
+    .prayer-key { color: #666; }
+    .prayer-val { font-weight: 500; color: var(--wood-dk); }
+
+    /* ═══════ PAGE BANNER ═══════ */
+    .page-banner {
+      height: 36vh; position: relative;
+      display: flex; align-items: flex-end; padding: 2.5rem 2rem; padding-top: 66px;
+      overflow: hidden;
+    }
+    .page-banner-photo {
+      position: absolute; inset: 0;
+      background-image: var(--PHOTO_ALT1);
+      background-size: cover; background-position: center 40%;
+    }
+    /* 배너용 어두운 그라데이션 */
+    .page-banner-photo::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(20,8,4,0.7) 100%);
+    }
+    .page-banner-content { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; width: 100%; }
+    .page-banner-ko { font-family: 'Noto Serif KR', serif; font-size: clamp(1.7rem, 4vw, 2.6rem); color: #fff; font-weight: 700; letter-spacing: 0.12em; }
+    .page-banner-en { font-size: 0.76rem; color: var(--gold); letter-spacing: 0.3em; text-transform: uppercase; margin-top: 0.35rem; }
+
+    /* ═══════ EVENTS ═══════ */
+    .event-tabs { display: flex; border-bottom: 2px solid rgba(200,150,30,0.18); margin-top: 2.8rem; }
+    .event-tab {
+      flex: 1; padding: 0.85rem 0.5rem; background: none; border: none;
+      font-family: 'Noto Serif KR', serif; font-size: 0.88rem; color: #888;
+      cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px;
+      letter-spacing: 0.05em; transition: all 0.2s;
+    }
+    .event-tab:hover { color: var(--gold); }
+    .event-tab.active { color: var(--crimson); border-bottom-color: var(--crimson); font-weight: 600; }
+    .event-panel { display: none; padding: 2.2rem 0; }
+    .event-panel.active { display: block; }
+    .event-hero {
+      height: 42vh; border-radius: 9px; overflow: hidden;
+      position: relative; display: flex; align-items: flex-end; padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    .event-hero-img {
+      position: absolute; inset: 0;
+      background-size: cover; background-position: center;
+    }
+    .event-hero-img::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.15) 60%);
+    }
+    .event-hero-content { position: relative; z-index: 1; }
+    .event-hero-label { font-size: 0.72rem; color: var(--gold); letter-spacing: 0.28em; text-transform: uppercase; }
+    .event-hero-title { font-family: 'Noto Serif KR', serif; font-size: clamp(1.7rem, 4vw, 2.8rem); color: #fff; font-weight: 900; }
+    .event-hero-date { font-size: 0.9rem; color: rgba(255,255,255,0.7); margin-top: 0.3rem; }
+    .event-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; margin-bottom: 1.8rem; }
+    .event-meta-box { background: rgba(200,150,30,0.07); border-left: 3px solid var(--gold); padding: 0.9rem 1.1rem; border-radius: 0 5px 5px 0; }
+    .event-meta-label { font-size: 0.7rem; color: var(--gold); letter-spacing: 0.2em; margin-bottom: 0.25rem; }
+    .event-meta-value { font-family: 'Noto Serif KR', serif; font-size: 0.95rem; color: var(--wood-dk); font-weight: 600; }
+    .event-desc { font-size: 0.92rem; color: #444; line-height: 2; margin-bottom: 1.8rem; }
+    .schedule-list { margin-top: 0.8rem; }
+    .schedule-item { display: flex; gap: 1.4rem; padding: 0.75rem 0; border-bottom: 1px solid rgba(200,150,30,0.1); font-size: 0.88rem; }
+    .schedule-time { min-width: 75px; color: var(--crimson); font-weight: 600; font-family: 'Noto Serif KR', serif; }
+    .schedule-desc { color: #444; }
+
+    /* ═══════ INFO PAGE ═══════ */
+    .info-section-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2.8rem; margin-top: 2.5rem; }
+    .info-block-title { font-family: 'Noto Serif KR', serif; font-size: 1.15rem; font-weight: 600; color: var(--wood-dk); margin-bottom: 0.9rem; padding-bottom: 0.45rem; border-bottom: 2px solid rgba(200,150,30,0.28); }
+    .info-block p { font-size: 0.9rem; color: #444; line-height: 2; margin-bottom: 0.7rem; }
+
+    /* ═══════ MISC ═══════ */
+    .lotus-divider { text-align: center; font-size: 1.3rem; color: var(--gold); margin: 2.2rem 0; letter-spacing: 0.5rem; opacity: 0.55; }
+    .highlight-box { background: rgba(139,26,26,0.05); border: 1px solid rgba(139,26,26,0.13); border-left: 4px solid var(--crimson); border-radius: 0 5px 5px 0; padding: 1.1rem 1.4rem; margin: 1.4rem 0; font-size: 0.9rem; color: #444; line-height: 1.9; }
+
+    /* ═══════ FOOTER ═══════ */
+    footer { background: var(--wood-dk); color: rgba(255,255,255,0.6); text-align: center; padding: 2.2rem 1rem; font-size: 0.82rem; line-height: 2; position: relative; z-index: 10; }
+    footer .footer-title { font-family: 'Noto Serif KR', serif; font-size: 1.05rem; color: var(--gold); letter-spacing: 0.15em; margin-bottom: 0.4rem; }
+
+    /* ═══════ MOBILE ═══════ */
+    @media (max-width: 768px) {
+      nav { display: none; position: fixed; top: 66px; left: 0; right: 0; background: rgba(16,6,3,0.97); flex-direction: column; gap: 0; border-bottom: 1px solid var(--gold); z-index: 199; }
+      nav.open { display: flex; }
+      .nav-btn { border-radius: 0; padding: 0.95rem 1.5rem; border-bottom: 1px solid rgba(200,150,30,0.1); }
+      #menu-toggle { display: flex; }
+      .quick-strip-inner { grid-template-columns: 1fr; }
+      .info-section-grid { grid-template-columns: 1fr; gap: 2rem; }
+      .event-meta { grid-template-columns: 1fr; }
+      .event-tabs { flex-wrap: wrap; }
+      .event-tab { flex: none; width: 50%; font-size: 0.8rem; }
+      .notice-item { grid-template-columns: 1fr; gap: 0.35rem; }
+      .prayer-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ══════ BACKGROUND ══════ -->
+<div id="bg-wrap">
+  <div id="temple-photo"></div>
+  <div id="sky-layer"></div>
+  <div id="celestial"></div>
+  <div id="read-overlay"></div>
+</div>
+
+<!-- ══════ HEADER ══════ -->
+<header id="main-header">
+  <div class="header-inner">
+    <div class="site-title" onclick="showPage('home')">
+      호국천룡사 <small>護國天龍寺</small>
+    </div>
+    <div id="menu-toggle" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </div>
+    <nav id="main-nav">
+      <button class="nav-btn active" onclick="showPage('home')">홈</button>
+      <button class="nav-btn" onclick="showPage('info')">사찰안내</button>
+      <button class="nav-btn" onclick="showPage('notice')">공지사항</button>
+      <button class="nav-btn" onclick="showPage('services')">법회/기도</button>
+      <button class="nav-btn" onclick="showPage('events')">연례행사</button>
+    </nav>
+  </div>
+</header>
+
+
+<!-- ══════ PAGE: HOME ══════ -->
+<div id="page-home" class="page active">
+
+  <!-- Hero -->
+  <div id="hero">
+    <svg class="hero-emblem" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="40" cy="40" r="37" stroke="#C8961E" stroke-width="1.2" stroke-dasharray="3.5 3" opacity="0.55"/>
+      <path d="M40 56C30 46 22 39 22 31c0-6 5-10 11-8 3 1 5 3 7 6 2-3 4-5 7-6 6-2 11 2 11 8 0 8-8 15-18 25z" fill="#C8961E" opacity="0.85"/>
+      <path d="M40 56c-5-13-12-19-8-27 2-5 6-6 8 0 2-6 6-5 8 0 4 8-3 14-8 27z" fill="#E8C547"/>
+      <path d="M40 56l-3 12 3-2 3 2z" fill="#C8961E" opacity="0.6"/>
+    </svg>
+
+    <h1 class="hero-title">호국천룡사</h1>
+    <p class="hero-hanja">護國天龍寺</p>
+    <!-- ✏️ EDIT: 사찰 소개 문구 -->
+    <p class="hero-tagline">
+      [절 소개 문구를 입력하세요]<br>
+      [부제목 또는 슬로건을 입력하세요]
+    </p>
+    <div>
+      <button class="hero-btn" onclick="showPage('info')">사찰안내</button>
+      <button class="hero-btn outline" onclick="showPage('notice')">공지사항</button>
+    </div>
+    <div id="hero-clock">
+      <div id="clock-time">--:--:--</div>
+      <div id="clock-date">----년 --월 --일</div>
+    </div>
+    <div class="scroll-hint">
+      <span>SCROLL</span><div class="scroll-arrow"></div>
+    </div>
+  </div>
+
+  <!-- Quick Strip -->
+  <div class="quick-strip">
+    <div class="quick-strip-inner">
+      <div>
+        <div class="qs-label">📍 소재지</div>
+        <!-- ✏️ EDIT: 주소 -->
+        <div class="qs-value null-text">[주소를 입력하세요]</div>
+      </div>
+      <div>
+        <div class="qs-label">☎ 전화</div>
+        <!-- ✏️ EDIT: 전화번호 -->
+        <div class="qs-value null-text">[전화번호]</div>
+      </div>
+      <div>
+        <div class="qs-label">🕐 일요법회</div>
+        <div class="qs-value">매주 일요일 10:40 – 12:00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content-area">
+    <div class="section-wrap">
+
+      <p class="section-label">이번 달 기도 일정</p>
+      <h2 class="section-title">정기 기도 안내</h2>
+      <div class="divider-gold"></div>
+
+      <div class="prayer-grid">
+        <!-- 관음재일 -->
+        <div class="prayer-card">
+          <div class="prayer-card-header gwaneum">
+            <div class="prayer-card-title">관음재일 觀音齋日</div>
+            <div class="prayer-card-subtitle">매월 음력 24일</div>
+          </div>
+          <div class="prayer-card-body">
+            <div class="prayer-row"><span class="prayer-key">이번 달 날짜</span><span class="prayer-val null-text">[날짜 입력]</span></div>
+            <div class="prayer-row"><span class="prayer-key">기도 시간</span><span class="prayer-val null-text">[시간 입력]</span></div>
+            <div class="prayer-row"><span class="prayer-key">담당 스님</span><span class="prayer-val null-text">[스님명]</span></div>
+          </div>
+        </div>
+        <!-- 지장재일 -->
+        <div class="prayer-card">
+          <div class="prayer-card-header jijang">
+            <div class="prayer-card-title">지장재일 地藏齋日</div>
+            <div class="prayer-card-subtitle">매월 음력 18일</div>
+          </div>
+          <div class="prayer-card-body">
+            <div class="prayer-row"><span class="prayer-key">이번 달 날짜</span><span class="prayer-val null-text">[날짜 입력]</span></div>
+            <div class="prayer-row"><span class="prayer-key">기도 시간</span><span class="prayer-val null-text">[시간 입력]</span></div>
+            <div class="prayer-row"><span class="prayer-key">담당 스님</span><span class="prayer-val null-text">[스님명]</span></div>
+          </div>
+        </div>
+        <!-- 초하루 -->
+        <div class="prayer-card">
+          <div class="prayer-card-header choraru">
+            <div class="prayer-card-title">초하루 初一</div>
+            <div class="prayer-card-subtitle">매월 음력 1일</div>
+          </div>
+          <div class="prayer-card-body">
+            <div class="prayer-row"><span class="prayer-key">이번 달 날짜</span><span class="prayer-val null-text">[날짜 입력]</span></div>
+            <div class="prayer-row"><span class="prayer-key">기도 시간</span><span class="prayer-val null-text">[시간 입력]</span></div>
+            <div class="prayer-row"><span class="prayer-key">담당 스님</span><span class="prayer-val null-text">[스님명]</span></div>
+          </div>
+        </div>
+        <!-- 일요법회 -->
+        <div class="prayer-card">
+          <div class="prayer-card-header yoil">
+            <div class="prayer-card-title">일요법회 日曜法會</div>
+            <div class="prayer-card-subtitle">매주 일요일</div>
+          </div>
+          <div class="prayer-card-body">
+            <div class="prayer-row"><span class="prayer-key">시간</span><span class="prayer-val">10:40 – 12:00</span></div>
+            <div class="prayer-row"><span class="prayer-key">장소</span><span class="prayer-val null-text">[법당명]</span></div>
+            <div class="prayer-row"><span class="prayer-key">법사 스님</span><span class="prayer-val null-text">[스님명]</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lotus-divider">❁ ❁ ❁</div>
+
+      <p class="section-label">연례행사</p>
+      <h2 class="section-title">올해의 주요 행사</h2>
+      <div class="divider-gold"></div>
+      <div class="card-grid">
+        <div class="card" onclick="showPage('events');switchEventTab('ipchun')" style="cursor:pointer">
+          <div class="card-icon">🌸</div>
+          <div class="card-title">입춘정초기도</div>
+          <div class="card-body">새해의 시작을 알리는 정초기도. 한 해의 평안과 소원 성취를 발원합니다.</div>
+        </div>
+        <div class="card" onclick="showPage('events');switchEventTab('birthday')" style="cursor:pointer">
+          <div class="card-icon">🪷</div>
+          <div class="card-title">부처님오신날</div>
+          <div class="card-body">음력 4월 8일, 석가모니 부처님 탄신일을 봉축하는 가장 큰 행사입니다.</div>
+        </div>
+        <div class="card" onclick="showPage('events');switchEventTab('baekjung')" style="cursor:pointer">
+          <div class="card-icon">🎑</div>
+          <div class="card-title">백중기도</div>
+          <div class="card-body">음력 7월 15일, 조상과 영가를 위해 올리는 우란분재 기도입니다.</div>
+        </div>
+        <div class="card" onclick="showPage('events');switchEventTab('dongji')" style="cursor:pointer">
+          <div class="card-icon">❄️</div>
+          <div class="card-title">동지기도</div>
+          <div class="card-body">동짓날 팥죽 공양과 함께 드리는 한 해의 마무리 기도입니다.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <footer>
+    <div class="footer-title">호국천룡사 護國天龍寺</div>
+    <div class="null-text">[주소를 입력하세요]</div>
+    <div>TEL: <span class="null-text">[전화번호]</span> &nbsp;|&nbsp; E-mail: <span class="null-text">[이메일]</span></div>
+  </footer>
+</div><!-- /home -->
+
+
+<!-- ══════ PAGE: 사찰안내 ══════ -->
+<div id="page-info" class="page">
+  <div class="page-banner">
+    <div class="page-banner-photo"></div>
+    <div class="page-banner-content">
+      <div class="page-banner-ko">사찰안내</div>
+      <div class="page-banner-en">Temple Information</div>
+    </div>
+  </div>
+  <div class="content-area">
+    <div class="section-wrap">
+      <p class="section-label">연혁</p>
+      <h2 class="section-title">사찰 소개</h2>
+      <div class="divider-gold"></div>
+      <!-- ✏️ EDIT: 사찰 소개 및 연혁 -->
+      <div class="highlight-box">[사찰 연혁 및 소개를 입력하세요. 창건 연도, 역사적 배경, 현재 운영 방향 등을 기술해 주세요.]</div>
+      <div class="info-section-grid">
+        <div class="info-block">
+          <div class="info-block-title">🙏 본 사찰 소개</div>
+          <p class="null-text">[사찰의 특징, 봉안 불상, 전각 등을 입력하세요]</p>
+        </div>
+        <div class="info-block">
+          <div class="info-block-title">📜 역대 주지 스님</div>
+          <p class="null-text">[역대 주지 스님 목록을 입력하세요]</p>
+        </div>
+      </div>
+      <div class="lotus-divider">❁ ❁ ❁</div>
+      <p class="section-label">오시는 길</p>
+      <h2 class="section-title">위치 및 교통</h2>
+      <div class="divider-gold"></div>
+      <table class="info-table">
+        <tr><th style="width:120px">주소</th><td class="null-text">[도로명 주소를 입력하세요]</td></tr>
+        <tr><th>지번 주소</th><td class="null-text">[지번 주소를 입력하세요]</td></tr>
+        <tr><th>대중교통</th><td class="null-text">[버스, 지하철 안내를 입력하세요]</td></tr>
+        <tr><th>자가용</th><td class="null-text">[내비게이션 검색어 및 경로 안내]</td></tr>
+        <tr><th>주차</th><td class="null-text">[주차 가능 여부 및 안내]</td></tr>
+        <tr><th>전화</th><td class="null-text">[전화번호]</td></tr>
+      </table>
+      <!-- 지도 삽입 영역 -->
+      <div style="margin-top:1.4rem; background:#EDE7D4; border-radius:7px; height:260px; display:flex; align-items:center; justify-content:center; border: 1px dashed #C4A27A;">
+        <div style="text-align:center; color:#888; font-size:0.88rem">
+          <div style="font-size:2rem; margin-bottom:0.5rem">🗺️</div>
+          <!-- ✏️ EDIT: 카카오맵 또는 네이버지도 iframe embed 코드를 이 div 안에 붙여넣으세요 -->
+          [지도를 삽입하세요 — 카카오맵 / 네이버지도 iframe embed 코드]
+        </div>
+      </div>
+      <div class="lotus-divider">❁ ❁ ❁</div>
+      <p class="section-label">예절 안내</p>
+      <h2 class="section-title">참배 예절</h2>
+      <div class="divider-gold"></div>
+      <div class="card-grid">
+        <div class="card"><div class="card-icon">👗</div><div class="card-title">복장</div><div class="card-body null-text">[복장 안내를 입력하세요]</div></div>
+        <div class="card"><div class="card-icon">🤫</div><div class="card-title">정숙</div><div class="card-body">법당 내에서는 정숙을 유지하시고, 휴대전화는 무음으로 해 주시기 바랍니다.</div></div>
+        <div class="card"><div class="card-icon">🙏</div><div class="card-title">절 예절</div><div class="card-body null-text">[참배 방법 및 예절을 입력하세요]</div></div>
+        <div class="card"><div class="card-icon">📸</div><div class="card-title">사진 촬영</div><div class="card-body null-text">[사진 촬영 허용 범위를 입력하세요]</div></div>
+      </div>
+    </div>
+  </div>
+  <footer><div class="footer-title">호국천룡사 護國天龍寺</div><div class="null-text">[주소]</div><div>TEL: <span class="null-text">[전화번호]</span></div></footer>
+</div><!-- /info -->
+
+
+<!-- ══════ PAGE: 공지사항 ══════ -->
+<div id="page-notice" class="page">
+  <div class="page-banner">
+    <div class="page-banner-photo" style="background-image: var(--PHOTO_ALT2);"></div>
+    <div class="page-banner-content">
+      <div class="page-banner-ko">공지사항</div>
+      <div class="page-banner-en">Notice &amp; Announcements</div>
+    </div>
+  </div>
+  <div class="content-area">
+    <div class="section-wrap">
+      <p class="section-label">이달의 일정</p>
+      <h2 class="section-title">기도 일정 안내</h2>
+      <div class="divider-gold"></div>
+      <div class="highlight-box">
+        📌 아래 날짜는 <strong>음력 기준</strong>입니다. 양력 날짜는 매달 관리자가 직접 업데이트합니다.<br>
+        날짜 수정: HTML 파일에서 <code style="background:#eee; padding:1px 4px; border-radius:2px">[날짜 입력]</code> 부분을 교체하세요.
+      </div>
+      <!-- ✏️ EDIT: 매달 날짜를 업데이트하세요 -->
+      <table class="info-table" style="margin-top:1.4rem">
+        <thead>
+          <tr><th>구분</th><th>음력</th><th>양력 (이번 달)</th><th>시간</th><th>장소</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="notice-badge badge-choraru">초하루</span></td><td>음력 1일</td><td class="null-text">[날짜 입력]</td><td class="null-text">[시간]</td><td class="null-text">[법당명]</td></tr>
+          <tr><td><span class="notice-badge badge-jijang">지장재일</span></td><td>음력 18일</td><td class="null-text">[날짜 입력]</td><td class="null-text">[시간]</td><td class="null-text">[법당명]</td></tr>
+          <tr><td><span class="notice-badge badge-gwaneum">관음재일</span></td><td>음력 24일</td><td class="null-text">[날짜 입력]</td><td class="null-text">[시간]</td><td class="null-text">[법당명]</td></tr>
+          <tr><td><span class="notice-badge" style="background:#F3E8FF;color:#7B2D8B">일요법회</span></td><td>매주 일요일</td><td>매주 일요일</td><td>10:40 – 12:00</td><td class="null-text">[법당명]</td></tr>
+        </tbody>
+      </table>
+      <div class="lotus-divider">❁ ❁ ❁</div>
+      <p class="section-label">공지사항</p>
+      <h2 class="section-title">최근 공지</h2>
+      <div class="divider-gold"></div>
+      <!-- ✏️ EDIT: 공지 내용을 직접 추가/수정하세요 -->
+      <div class="notice-list">
+        <div class="notice-item">
+          <span class="notice-badge badge-gwaneum">관음재일</span>
+          <div><div class="notice-title null-text">[관음재일 공지 제목을 입력하세요]</div><div class="notice-subtitle null-text">[공지 내용 요약]</div></div>
+          <div class="notice-date null-text">[날짜]</div>
+        </div>
+        <div class="notice-item">
+          <span class="notice-badge badge-jijang">지장재일</span>
+          <div><div class="notice-title null-text">[지장재일 공지 제목을 입력하세요]</div><div class="notice-subtitle null-text">[공지 내용 요약]</div></div>
+          <div class="notice-date null-text">[날짜]</div>
+        </div>
+        <div class="notice-item">
+          <span class="notice-badge badge-choraru">초하루</span>
+          <div><div class="notice-title null-text">[초하루 기도 공지 제목]</div><div class="notice-subtitle null-text">[공지 내용 요약]</div></div>
+          <div class="notice-date null-text">[날짜]</div>
+        </div>
+        <div class="notice-item">
+          <span class="notice-badge badge-notice">공지</span>
+          <div><div class="notice-title null-text">[일반 공지 제목]</div><div class="notice-subtitle null-text">[공지 내용 요약]</div></div>
+          <div class="notice-date null-text">[날짜]</div>
+        </div>
+        <!-- ✏️ 위 형식을 복사하여 공지를 추가하세요 -->
+      </div>
+    </div>
+  </div>
+  <footer><div class="footer-title">호국천룡사 護國天龍寺</div><div class="null-text">[주소]</div><div>TEL: <span class="null-text">[전화번호]</span></div></footer>
+</div><!-- /notice -->
+
+
+<!-- ══════ PAGE: 법회/기도 ══════ -->
+<div id="page-services" class="page">
+  <div class="page-banner">
+    <div class="page-banner-photo"></div>
+    <div class="page-banner-content">
+      <div class="page-banner-ko">법회 · 기도</div>
+      <div class="page-banner-en">Dharma Services &amp; Prayer</div>
+    </div>
+  </div>
+  <div class="content-area">
+    <div class="section-wrap">
+      <p class="section-label">정기 법회</p>
+      <h2 class="section-title">일요법회</h2>
+      <div class="divider-gold"></div>
+      <div class="info-section-grid">
+        <div>
+          <table class="info-table">
+            <tr><th style="width:110px">일시</th><td>매주 일요일</td></tr>
+            <tr><th>시간</th><td><strong>오전 10:40 – 오후 12:00</strong></td></tr>
+            <tr><th>장소</th><td class="null-text">[법당명을 입력하세요]</td></tr>
+            <tr><th>법사 스님</th><td class="null-text">[법사 스님 이름]</td></tr>
+            <tr><th>내용</th><td class="null-text">[법회 프로그램을 입력하세요]</td></tr>
+          </table>
+        </div>
+        <div>
+          <div class="info-block-title">📋 일요법회 순서</div>
+          <div class="schedule-list">
+            <!-- ✏️ EDIT: 법회 순서 -->
+            <div class="schedule-item"><span class="schedule-time">10:40</span><span class="schedule-desc null-text">[시작 순서를 입력하세요]</span></div>
+            <div class="schedule-item"><span class="schedule-time null-text">[시간]</span><span class="schedule-desc null-text">[순서 내용]</span></div>
+            <div class="schedule-item"><span class="schedule-time null-text">[시간]</span><span class="schedule-desc null-text">[법문]</span></div>
+            <div class="schedule-item"><span class="schedule-time">12:00</span><span class="schedule-desc">마침 및 점심 공양</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="lotus-divider">❁ ❁ ❁</div>
+
+      <!-- 관음재일 -->
+      <p class="section-label">정기 기도</p>
+      <h2 class="section-title">월 정기 기도</h2>
+      <div class="divider-gold"></div>
+      <div style="margin-bottom:2.5rem">
+        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
+          <div style="width:5px;height:38px;background:#1967D2;border-radius:3px"></div>
+          <div><h3 style="font-family:'Noto Serif KR',serif;font-size:1.2rem;color:var(--wood-dk)">관음재일 觀音齋日</h3><p style="font-size:0.82rem;color:#888;margin-top:2px">매월 음력 24일 · 관세음보살 기도일</p></div>
+        </div>
+        <div class="info-section-grid">
+          <table class="info-table">
+            <tr><th style="width:110px">기도 내용</th><td class="null-text">[관음재일 기도 내용을 입력하세요]</td></tr>
+            <tr><th>기도 시간</th><td class="null-text">[시간]</td></tr>
+            <tr><th>봉헌물</th><td class="null-text">[봉헌 물품 안내]</td></tr>
+            <tr><th>예약/문의</th><td class="null-text">[연락처]</td></tr>
+          </table>
+          <p style="font-size:0.9rem;color:#444;line-height:2" class="null-text">[관음재일 기도에 대한 설명을 입력하세요.]</p>
+        </div>
+      </div>
+
+      <!-- 지장재일 -->
+      <div style="margin-bottom:2.5rem">
+        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
+          <div style="width:5px;height:38px;background:var(--crimson);border-radius:3px"></div>
+          <div><h3 style="font-family:'Noto Serif KR',serif;font-size:1.2rem;color:var(--wood-dk)">지장재일 地藏齋日</h3><p style="font-size:0.82rem;color:#888;margin-top:2px">매월 음력 18일 · 지장보살 기도일</p></div>
+        </div>
+        <div class="info-section-grid">
+          <table class="info-table">
+            <tr><th style="width:110px">기도 내용</th><td class="null-text">[지장재일 기도 내용을 입력하세요]</td></tr>
+            <tr><th>기도 시간</th><td class="null-text">[시간]</td></tr>
+            <tr><th>봉헌물</th><td class="null-text">[봉헌 물품 안내]</td></tr>
+            <tr><th>예약/문의</th><td class="null-text">[연락처]</td></tr>
+          </table>
+          <p style="font-size:0.9rem;color:#444;line-height:2" class="null-text">[지장재일 기도에 대한 설명을 입력하세요.]</p>
+        </div>
+      </div>
+
+      <!-- 초하루 -->
+      <div style="margin-bottom:2rem">
+        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
+          <div style="width:5px;height:38px;background:#137333;border-radius:3px"></div>
+          <div><h3 style="font-family:'Noto Serif KR',serif;font-size:1.2rem;color:var(--wood-dk)">초하루 初一</h3><p style="font-size:0.82rem;color:#888;margin-top:2px">매월 음력 1일 · 새달 기도일</p></div>
+        </div>
+        <div class="info-section-grid">
+          <table class="info-table">
+            <tr><th style="width:110px">기도 내용</th><td class="null-text">[초하루 기도 내용을 입력하세요]</td></tr>
+            <tr><th>기도 시간</th><td class="null-text">[시간]</td></tr>
+            <tr><th>봉헌물</th><td class="null-text">[봉헌 물품 안내]</td></tr>
+            <tr><th>예약/문의</th><td class="null-text">[연락처]</td></tr>
+          </table>
+          <p style="font-size:0.9rem;color:#444;line-height:2" class="null-text">[초하루 기도에 대한 설명을 입력하세요.]</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer><div class="footer-title">호국천룡사 護國天龍寺</div><div class="null-text">[주소]</div><div>TEL: <span class="null-text">[전화번호]</span></div></footer>
+</div><!-- /services -->
+
+
+<!-- ══════ PAGE: 연례행사 ══════ -->
+<div id="page-events" class="page">
+  <div class="page-banner">
+    <div class="page-banner-photo" style="background-image: var(--PHOTO_THUMB);"></div>
+    <div class="page-banner-content">
+      <div class="page-banner-ko">연례행사</div>
+      <div class="page-banner-en">Annual Buddhist Events</div>
+    </div>
+  </div>
+  <div class="content-area">
+    <div class="section-wrap">
+
+      <div class="event-tabs">
+        <button class="event-tab active" onclick="switchEventTab('ipchun')">🌸 입춘정초기도</button>
+        <button class="event-tab" onclick="switchEventTab('birthday')">🪷 부처님오신날</button>
+        <button class="event-tab" onclick="switchEventTab('baekjung')">🎑 백중기도</button>
+        <button class="event-tab" onclick="switchEventTab('dongji')">❄️ 동지기도</button>
+      </div>
+
+      <!-- 입춘정초기도 -->
+      <div id="event-ipchun" class="event-panel active">
+        <div class="event-hero">
+          <div class="event-hero-img" style="background-image: var(--PHOTO_ALT1);"></div>
+          <div class="event-hero-content">
+            <div class="event-hero-label">Annual Events · 연례행사</div>
+            <div class="event-hero-title">입춘정초기도<br><span style="font-size:0.55em;font-weight:300">立春正初祈禱</span></div>
+            <div class="event-hero-date null-text">[행사 날짜를 입력하세요]</div>
+          </div>
+        </div>
+        <div class="event-meta">
+          <div class="event-meta-box"><div class="event-meta-label">행사 일자</div><div class="event-meta-value null-text">[날짜 입력]</div></div>
+          <div class="event-meta-box"><div class="event-meta-label">장소</div><div class="event-meta-value null-text">[장소 입력]</div></div>
+          <div class="event-meta-box"><div class="event-meta-label">접수 방법</div><div class="event-meta-value null-text">[접수 방법]</div></div>
+          <div class="event-meta-box"><div class="event-meta-label">문의</div><div class="event-meta-value null-text">[연락처]</div></div>
+        </div>
+        <div class="event-desc">
+          입춘(立春)은 24절기 중 첫 번째로, 새해의 봄이 시작되는 날입니다. 호국천룡사에서는 입춘을 맞아 정초 기도를 봉행하여 한 해 동안 신도 여러분과 가족의 평안, 소원 성취, 국태민안을 발원합니다.<br><br>
+          <span class="null-text">[기도에 대한 추가 설명을 입력하세요.]</span>
+        </div>
+        <h4 style="font-family:'Noto Serif KR',serif;color:var(--wood-dk);margin-bottom:0.8rem">행사 순서</h4>
+        <div class="schedule-list">
+          <div class="schedule-item"><span class="schedule-time null-text">[시간]</span><span class="schedule-desc null-text">[순서 내용]</span></div>
+          <div class="schedule-item"><span class="schedule-time null-text">[시간]</span><span class="schedule-desc null-text">[순서 내용]</span></div>
+          <div class="schedule-item"><span class="schedule-time null-text">[시간]</span><span class="schedule-desc null-text">[회향 및 마침]</span></div>
+        </div>
+        <div class="highlight-box" style="margin-top:1.8rem">📌 <strong>기도 동참 안내:</strong> <span class="null-text">[기도 동참 방법, 비용, 예약 등을 입력하세요]</span></div>
+      </div><!-- /ipchun -->
+
+      <!-- 부처님오신날 -->
+      <div id="event-birthday" class="event-panel">
+        <div class="event-hero">
+          <div class="event-hero-img" style="background-image: var(--PHOTO_MAIN);"></div>
+          <div class="event-hero-content">
+            <div class="event-hero-label">Annual Events · 연례행사</div>
+            <div class="event-hero-title">부처님오신날<br><span style="font-size:0.55em;font-weight:300">佛誕日 · 음력 4월 8일</span></div>
+            <div class="event-hero-date null-text">[올해 양력 날짜를 입력하세요]</div>
+          </div>
+        </div>
+        <div class="event-meta">
+          <div class="event-meta-box"><div class="event-meta-label">법정 공휴일</div><div class="event-meta-value">음력 4월 8일</div></div>
+          <div class="event-meta-box"><div class="event-meta-label">올해 양력</div><div class="event-meta-value null-text">[날짜 입력]</div></div>
+          <div class="event-meta-box"><div class="event-meta-label">연등 접수</div><div class="event-meta-value null-text">[접수 기간 및 방법]</div></div>
+          <div class="event-meta-box"><div class="event-meta-label">문의</div><div class="event-meta-value null-text">[연락처]</div></div>
+        </div>
+        <div class="event-desc">
+          음력 4월 8일 석가모니 부처님의 탄신을 봉축하는 불교 최대의 명절입니다. 호국천룡사에서는 봉축 법요식과 연등 행렬, 각종 문화행사를 통해 부처님의 탄신을 기쁘게 맞이합니다.<br><br>
+          <span class="null-text">[행사에 대한 추가 안내를 입력하세요.]</span>
+        </div>
+        <h4 style="font-family:'Noto Serif KR',serif;color:var(--wood-dk);margin-bottom:0.8rem">행사 순서</h4>
+        <div class="schedule-list">
+          <div class="schedule-item"><span class="schedule-time null-text">[시간]</span><span class="schedule-desc null-text">[봉축 법요식]</span></div>
+          <div class="schedule-item"><span class="schedule-time null-text">[시간]</span><span class="schedule-desc null-text">[관불 의식]</span></div>
+          <div class="schedule-item"><span class="schedule-time null-text">[시간]</span><span class="schedule-desc null-text">[연등 점등 / 행렬]</span></div>
+          <div class="schedule-item"><span class="schedule-time null-text">[시간]</span><span class="schedule-desc null-text">[공양 및 문화 행사]</span></div>
+        </div>
+        <div class="highlight-box" style="margin-top:1.8rem">🪔 <strong>연등 신청 안내:</strong> <span class="null-text">[연등 신청 방법, 비용, 기간 등을 입력하세요]</span></div>
+      </div><!-- /birthday -->
+
+      <!-- 백중기도 -->
+      <div id="event-baekjung" class="event-panel">
+        <div class="event-hero">
+          <div class="event-hero-img" style="background-image: var(--PHOTO_ALT2);"></div>
+          <div class="event-hero-content">
+            <div class="event-hero-label">Annual Events · 연례행사</div>
+            <div class="event-hero-title">백중기도<br><span style="font-size:0.55em;font-weight:300">百中祈禱 · 음력 7월 15일</span></div>
+            <div class="event-hero-date null-text">[올해 양력 날짜를 입력하세요]</div>
+          </div>
+        </div>
+        <div class="event-meta">
+          <div class="event-meta-box"><div class="event-meta-label">기도 기간</div><div class="event-meta-value null-text">[기도 기간 입력]</div></div>
+          <div class="event-meta-box"><div class="event-meta-label">회향일</div><div class="event-meta-value">음력 7월 15일 (백중)</div></div>
+          <div class="event-meta-box"><div class="event-meta-label">접수</div><div class="event-meta-value null-text">[접수 방법]</div></div>
+          <div class="event-meta-box"><div class="event-meta-label">문의</div><div class="event-meta-value null-text">[연락처]</div></div>
+        </div>
+        <div class="event-desc">
+          백중(百中, 음력 7월 15일)은 우란분절(盂蘭盆節)이라고도 하며, 조상과 영가(靈駕)를 위한 천도 기도를 올리는 날입니다. 지장보살의 원력으로 고통받는 영가들이 극락왕생하도록 발원하는 중요한 기도입니다.<br><br>
+          <span class="null-text">[행사에 대한 추가 안내를 입력하세요.]</span>
+        </div>
+        <h4 style="font-family:'Noto Serif KR',serif;color:var(--wood-dk);margin-bottom:0.8rem">회향 법회 순서</h4>
+        <div class="schedule-list">
+          <div class="schedule-item"><span class="schedule-time null-text">[시간]</span><span class="schedule-desc null-text">[순서 내용]</span></div>
+          <div class="schedule-item"><span class="schedule-time null-text">[시간]</span><span class="schedule-desc null-text">[영가 천도재]</span></div>
+          <div class="schedule-item"><span class="schedule-time null-text">[시간]</span><span class="schedule-desc null-text">[회향 및 공양]</span></div>
+        </div>
+        <div class="highlight-box" style="margin-top:1.8rem">🙏 <strong>천도재 동참 안내:</strong> <span class="null-text">[조상 천도재 및 기도 동참 안내를 입력하세요]</span></div>
+      </div><!-- /baekjung -->
+
+      <!-- 동지기도 -->
+      <div id="event-dongji" class="event-panel">
+        <div class="event-hero">
+          <div class="event-hero-img" style="background-image: var(--PHOTO_ALT1);"></div>
+          <div class="event-hero-content">
+            <div class="event-hero-label">Annual Events · 연례행사</div>
+            <div class="event-hero-title">동지기도<br><span style="font-size:0.55em;font-weight:300">冬至祈禱</span></div>
+            <div class="event-hero-date null-text">[올해 동지 날짜를 입력하세요]</div>
+          </div>
+        </div>
+        <div class="event-meta">
+          <div class="event-meta-box"><div class="event-meta-label">행사 일자</div><div class="event-meta-value null-text">[날짜 입력]</div></div>
+          <div class="event-meta-box"><div class="event-meta-label">장소</div><div class="event-meta-value null-text">[장소 입력]</div></div>
+          <div class="event-meta-box"><div class="event-meta-label">팥죽 공양</div><div class="event-meta-value null-text">[공양 시간]</div></div>
+          <div class="event-meta-box"><div class="event-meta-label">문의</div><div class="event-meta-value null-text">[연락처]</div></div>
+        </div>
+        <div class="event-desc">
+          동지(冬至)는 일 년 중 밤이 가장 긴 날로, 예로부터 팥죽을 쑤어 액귀를 쫓고 새 해의 시작을 준비하는 날로 여겨왔습니다. 호국천룡사에서는 동지를 맞아 한 해의 마무리 기도를 봉행하고 신도 여러분과 함께 팥죽 공양을 나눕니다.<br><br>
+          <span class="null-text">[행사에 대한 추가 안내를 입력하세요.]</span>
+        </div>
+        <h4 style="font-family:'Noto Serif KR',serif;color:var(--wood-dk);margin-bottom:0.8rem">행사 순서</h4>
+        <div class="schedule-list">
+          <div class="schedule-item"><span class="schedule-time null-text">[시간]</span><span class="schedule-desc null-text">[동지 기도]</span></div>
+          <div class="schedule-item"><span class="schedule-time null-text">[시간]</span><span class="schedule-desc null-text">[팥죽 공양]</span></div>
+          <div class="schedule-item"><span class="schedule-time null-text">[시간]</span><span class="schedule-desc null-text">[회향]</span></div>
+        </div>
+        <div class="highlight-box" style="margin-top:1.8rem">🍲 <strong>팥죽 공양 안내:</strong> <span class="null-text">[팥죽 공양 참여 방법 및 안내를 입력하세요]</span></div>
+      </div><!-- /dongji -->
+
+    </div>
+  </div>
+  <footer><div class="footer-title">호국천룡사 護國天龍寺</div><div class="null-text">[주소]</div><div>TEL: <span class="null-text">[전화번호]</span></div></footer>
+</div><!-- /events -->
+
+
+<!-- ══════ JAVASCRIPT ══════ -->
+<script>
+// ─── PAGE NAV ────────────────────────────────
+const PAGES = ['home','info','notice','services','events'];
+function showPage(id) {
+  PAGES.forEach(p => document.getElementById('page-'+p).classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach((b,i) => {
+    b.classList.toggle('active', PAGES[i] === id);
+  });
+  window.scrollTo({top:0, behavior:'smooth'});
+  document.getElementById('main-nav').classList.remove('open');
+}
+function toggleMenu() { document.getElementById('main-nav').classList.toggle('open'); }
+
+// ─── EVENT TABS ──────────────────────────────
+const EVENT_IDS = ['ipchun','birthday','baekjung','dongji'];
+function switchEventTab(id) {
+  document.querySelectorAll('.event-tab').forEach((t,i) => t.classList.toggle('active', EVENT_IDS[i]===id));
+  EVENT_IDS.forEach(e => document.getElementById('event-'+e).classList.toggle('active', e===id));
+}
+
+// ─── CLOCK ───────────────────────────────────
+const DAYS = ['일','월','화','수','목','금','토'];
+function updateClock() {
+  const n = new Date();
+  document.getElementById('clock-time').textContent =
+    [n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+  document.getElementById('clock-date').textContent =
+    `${n.getFullYear()}년 ${n.getMonth()+1}월 ${n.getDate()}일 (${DAYS[n.getDay()]})`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ─── STARS ───────────────────────────────────
+(function createStars() {
+  const sky = document.getElementById('sky-layer');
+  for (let i = 0; i < 90; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const sz = Math.random() * 2.4 + 0.5;
+    Object.assign(s.style, {
+      width: sz+'px', height: sz+'px',
+      left:  Math.random()*100+'%',
+      top:   Math.random()*55+'%',
+      opacity: '0',
+      animationDelay:    Math.random()*4+'s',
+      animationDuration: (2+Math.random()*3)+'s'
+    });
+    sky.appendChild(s);
+  }
+})();
+
+// ─── SKY + SUN/MOON ──────────────────────────
+/*
+  하늘 레이어: 시간별 상단 색상(topC)과 중간 색상(midC) 정의
+  gradient = topC(0%) → midC(45%) → transparent(68%)
+  사찰 사진은 항상 70% 아래에서 보임
+*/
+const SKY_CONFIG = {
+  // [topC, midC, sunColor, glowColor, starOpacity]
+  night:     ['#04040f','#080818', null,       null,       1.0],
+  predawn:   ['#060615','#120828', null,       null,       0.8],
+  dawn:      ['#0d102a','#c04518', '#FF8030',  '#FF5010',  0.3],
+  sunrise:   ['#12305c','#d9601a', '#FFD060',  '#FFB030',  0.1],
+  morning:   ['#1260a0','#5ab0e0', '#FFF5C0',  '#FFE870',  0.0],
+  day:       ['#1470c8','#60aae0', '#FFFFF0',  '#FFF9C4',  0.0],
+  afternoon: ['#1255a8','#4898d0', '#FFE050',  '#FFD020',  0.0],
+  golden:    ['#102858','#cc6018', '#FFC040',  '#FFA000',  0.0],
+  sunset:    ['#08183a','#aa3818', '#FF7020',  '#FF4808',  0.1],
+  dusk:      ['#06081a','#281040', null,       null,       0.5],
+  evening:   ['#040410','#0c0820', null,       null,       0.9],
+};
+
+function getSkyKey(h) {
+  if (h <  4.5) return 'night';
+  if (h <  5.5) return 'predawn';
+  if (h <  6.5) return 'dawn';
+  if (h <  7.5) return 'sunrise';
+  if (h < 10.0) return 'morning';
+  if (h < 15.5) return 'day';
+  if (h < 17.0) return 'afternoon';
+  if (h < 18.0) return 'golden';
+  if (h < 19.0) return 'sunset';
+  if (h < 20.5) return 'dusk';
+  if (h < 21.5) return 'evening';
+  return 'night';
+}
+
+function updateSky() {
+  const now = new Date();
+  const h = now.getHours() + now.getMinutes()/60 + now.getSeconds()/3600;
+  const cfg = SKY_CONFIG[getSkyKey(h)];
+  const [topC, midC, sunC, glowC, starOpacity] = cfg;
+
+  const skyLayer = document.getElementById('sky-layer');
+  const celestial = document.getElementById('celestial');
+  const stars = document.querySelectorAll('.star');
+
+  // 하늘 그라데이션: 상단 불투명 → 중간 반투명 → 70% 이후 완전 투명 (사찰 사진 노출)
+  skyLayer.style.background = `linear-gradient(to bottom,
+    ${topC} 0%,
+    ${topC} 15%,
+    ${midC} 45%,
+    rgba(0,0,0,0) 70%
+  )`;
+
+  // 별 표시
+  stars.forEach(s => {
+    s.style.animationPlayState = starOpacity > 0 ? 'running' : 'paused';
+    if (starOpacity <= 0) s.style.opacity = '0';
+    else s.style.removeProperty('opacity');
+  });
+
+  // 태양 (05:30 ~ 19:30)
+  const isSun  = h >= 5.5 && h <= 19.5;
+  const isMoon = !isSun;
+
+  if (isSun && sunC) {
+    const prog  = Math.max(0, Math.min(1, (h - 5.5) / 14));
+    const angle = prog * Math.PI;
+    const cx    = 5 + 90 * prog;        // 5% → 95% vw
+    const cy    = 55 - Math.sin(angle) * 46; // 55vh → 9vh → 55vh
+    celestial.style.cssText = `
+      left:${cx}vw; top:${cy}vh;
+      width:54px; height:54px;
+      opacity:1;
+      background:radial-gradient(circle at 40% 40%, white, ${sunC});
+      box-shadow:0 0 28px 12px ${glowC||'rgba(255,200,80,0.5)'},
+                 0 0 80px 35px ${(glowC||'rgba(255,200,80,0.5)').replace(')',',0.25)')};
+    `;
+  } else if (isMoon) {
+    const mh    = h < 6 ? h + 24 : h;
+    const prog  = Math.max(0, Math.min(1, (mh - 19.5) / 14));
+    const angle = prog * Math.PI;
+    const cx    = 5 + 90 * prog;
+    const cy    = 55 - Math.sin(angle) * 46;
+    celestial.style.cssText = `
+      left:${cx}vw; top:${cy}vh;
+      width:44px; height:44px;
+      opacity:0.88;
+      background:radial-gradient(circle at 35% 35%, #FFFDE7, #C8C090);
+      box-shadow:0 0 18px 7px rgba(220,215,170,0.4),
+                 0 0 55px 22px rgba(180,175,130,0.15);
+    `;
+  } else {
+    celestial.style.opacity = '0';
+  }
+}
+
+updateSky();
+setInterval(updateSky, 30000);
+</script>
+</body>
+</html>
